@@ -73,7 +73,8 @@ while IFS= read -r url; do
     code=DRY
   else
     code="$(curl -s -L -m 30 -o /dev/null -w '%{http_code}' -A "$UA" \
-      "https://web.archive.org/save/$url" || echo 000)"
+      "https://web.archive.org/save/$url")"
+    code="${code:-000}"   # a timeout already prints 000; never double it
   fi
   echo "  Internet Archive HTTP $code"
   submitted=$((submitted + 1))
