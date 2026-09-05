@@ -66,7 +66,7 @@ total="$(printf '%s\n' "$uniq_urls" | grep -c . || true)"
 {
   echo "## Daily full snapshot — \`$LABEL\` — $(date -u '+%Y-%m-%d %H:%M UTC')"
   echo ""
-  echo "**$total** URL(s). Internet Archive submitted automatically; **archive.today** and **perma.cc** are manual — links per URL below."
+  echo "**$total** URL(s). Internet Archive submitted automatically; **archive.today** is a browser leg — the estate runs it with the \`/snapshot\` skill over the CORPUS papers, and the per-URL links below cover anything else."
   echo "The response code is a heuristic; the authoritative check is the CDX API."
   echo ""
 } >> "$SUMMARY"
@@ -148,7 +148,6 @@ while IFS= read -r url; do
     echo ""
     echo "- 🗄️ **Internet Archive** — $result · [view captures](https://web.archive.org/web/*/$url)"
     echo "- 📎 **archive.today** — *click to capture:* https://archive.ph/?url=$enc"
-    echo "- ⚖️ **perma.cc** — *capture manually at* https://perma.cc/ · paste: \`$url\`"
     echo ""
   } >> "$SUMMARY"
   [ -n "${DRY_RUN:-}" ] || sleep 12

@@ -105,8 +105,16 @@ locally, and `DRY_RUN=1` lists what would be submitted without submitting.
   the heartbank.net research mirror) and never again, so a rename is captured
   once, the day it ships — confirm the 301 row in the CDX and do not list the
   old URL in `extra-urls.txt`.
-- archive.today and perma.cc resist automation; each job summary carries
-  prefilled links for them, and that click is the only manual step.
+- archive.today resists automation and is a **browser leg**, not a job here: `curl`
+  gets a `429` and Chrome gets a Cloudflare interstitial, which a person must clear.
+  The estate runs it with the `/snapshot` skill over the corpus papers — the
+  prior-art-bearing surface — and records each capture in `archive-today.tsv`. That
+  file is a cache; `https://archive.ph/newest/<url>` is authoritative. The per-URL
+  links in each job summary still cover anything outside the corpus.
+- **perma.cc was ruled out of the estate on 2026-09-05.** Its free tier is ten links
+  on a one-time trial, not ten a month, after which an individual must pay or be
+  affiliated with a registrar; ten cannot mirror 136 papers. Papers that still
+  advertise a perma.cc mirror are wrong and are corrected as each is revised.
 - `LAST-RUN.md` is rewritten and committed by every run. GitHub pauses a
   scheduled workflow after 60 days without repository activity, and that commit
   is the activity. Do not delete the step to keep the history tidy.
