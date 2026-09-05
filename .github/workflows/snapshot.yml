@@ -54,10 +54,13 @@ name: Daily full snapshot
 # ONLY here: the site repositories' push jobs stay secret-free by design, and
 # this repository has no pull_request trigger, so a fork cannot reach it.
 #
-# RATE LIMITS. Each host is its own job, so each gets its own runner IP, which
-# is how the 22 per-repo jobs already behaved; max-parallel keeps the total
-# request rate civil. thonly.org alone is ~180 routes at ~30 s each — about
-# 90 minutes — which is why the per-job timeout is generous.
+# RATE LIMITS. Each host is its own job. Anonymously that meant one IP per job,
+# which is how the 22 per-repo jobs already behaved. Authenticated, every job
+# shares ONE account's few concurrent capture slots (3 on the first run), so
+# submit.sh waits for a free slot before each request and retries on the
+# session-limit error; max-parallel is kept at the slot count so the jobs mostly
+# take turns instead of colliding. thonly.org alone is ~180 routes at ~12 s
+# each — about 40 minutes — which is why the per-job timeout is generous.
 
 on:
   schedule:
@@ -107,7 +110,7 @@ jobs:
     timeout-minutes: 240
     strategy:
       fail-fast: false
-      max-parallel: 6
+      max-parallel: 3
       matrix:
         host: ${{ fromJSON(needs.plan.outputs.hosts) }}
     steps:

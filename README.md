@@ -60,7 +60,11 @@ asynchronous (a job id comes back at once instead of a held connection), and
 with `if_not_archived_within=20h` so a page a push captured earlier the same day
 is not captured twice. Without them it uses anonymous Save Page Now, exactly as
 before. A pair that is set but rejected degrades to anonymous with a warning,
-never to an error per URL, and every job summary opens with which path ran.
+never to an error per URL, and every job summary opens with which path ran and
+the account's quota (`available` concurrent slots, `daily_captures_limit`).
+Those slots are per account and shared by every job of a run, so `submit.sh`
+waits for a free one before each request and retries on the session-limit
+error; the matrix runs at most three hosts at a time for the same reason.
 
 The key lives only here. The site repositories' push jobs are secret-free by
 design; this repository has no `pull_request` trigger, so a fork cannot reach

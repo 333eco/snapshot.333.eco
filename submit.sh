@@ -99,10 +99,34 @@ while IFS= read -r url; do
   if [ -n "${DRY_RUN:-}" ]; then
     result="DRY"
   elif [ -n "$AUTH" ]; then
-    resp="$(curl -s -m 30 -X POST -H 'Accept: application/json' -H "Authorization: $AUTH" -A "$UA" \
-      --data-urlencode "url=$url" \
-      --data-urlencode "if_not_archived_within=${IA_IF_NOT_ARCHIVED_WITHIN:-20h}" \
-      https://web.archive.org/save || true)"
+    # One account, a handful of concurrent capture slots (the status endpoint said
+    # "available": 3 on the first run), shared by EVERY job of this workflow — the
+    # matrix no longer buys throughput the way it did per-IP anonymously. So: wait
+    # for a free slot (bounded), then submit; and if the API still reports the
+    # session limit (a parallel job took the slot between the poll and the POST),
+    # back off and retry a few times rather than losing the URL for the day.
+    attempt=0
+    while :; do
+      waited=0
+      while [ "$waited" -lt 180 ]; do
+        avail="$(curl -s -m 20 -H 'Accept: application/json' -H "Authorization: $AUTH" -A "$UA" \
+          https://web.archive.org/save/status/user 2>/dev/null | jq -r '.available // 1' 2>/dev/null || echo 1)"
+        [ "${avail:-1}" != "0" ] && break
+        [ "$waited" -eq 0 ] && echo "  waiting for a free SPN2 slot…"
+        sleep 10; waited=$((waited + 10))
+      done
+      resp="$(curl -s -m 30 -X POST -H 'Accept: application/json' -H "Authorization: $AUTH" -A "$UA" \
+        --data-urlencode "url=$url" \
+        --data-urlencode "if_not_archived_within=${IA_IF_NOT_ARCHIVED_WITHIN:-20h}" \
+        https://web.archive.org/save || true)"
+      if printf '%s' "$resp" | grep -qiE 'user-session-limit|limit of active sessions' && [ "$attempt" -lt 6 ]; then
+        attempt=$((attempt + 1))
+        echo "  SPN2 session limit reached; retry $attempt of 6 in 20 s"
+        sleep 20
+        continue
+      fi
+      break
+    done
     if printf '%s' "$resp" | jq -e '.job_id' >/dev/null 2>&1; then
       result="queued $(printf '%s' "$resp" | jq -r '.job_id')"
       msg="$(printf '%s' "$resp" | jq -r '.message // empty')"
