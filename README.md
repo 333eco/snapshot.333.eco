@@ -27,7 +27,7 @@ estate's convention for institution-wide repositories, as `shared.333.eco` does.
 |---|---|
 | `hosts.txt` | fetches `https://<host>/sitemap.xml` **live** and submits every `<loc>` |
 | `corpora.txt` | clones each public corpus repository and submits the raw URL of every tracked `*.md` except `README.md`, `TIMESTAMPS.md`, `ZENODO.md` |
-| `extra-urls.txt` | what cannot be derived — redirect URLs and pages kept out of a sitemap |
+| `extra-urls.txt` | what cannot be derived — pages kept out of a sitemap (not redirects; see the file's header) |
 
 Nothing derivable is hand-listed. The live sitemap is the set of public routes
 and can be ahead of any checkout; the corpus tree is the set of papers and the
@@ -99,8 +99,12 @@ locally, and `DRY_RUN=1` lists what would be submitted without submitting.
   capture. The authoritative check is the CDX API:
   `https://web.archive.org/cdx/search/cdx?url=<URL>&output=json&fl=timestamp,statuscode`
 - Save Page Now renders a single-page app's route and metadata at a timestamp;
-  imperfect SPA fidelity is an accepted prior-art limitation. For a redirect it
-  records the 301, which is what keeps a renamed paper's citations stable.
+  imperfect SPA fidelity is an accepted prior-art limitation.
+- For a redirect it follows the hop and records the **target**. The 301 row that
+  joins an old URL to a new one was recorded on first submission (June 2026 for
+  the heartbank.net research mirror) and never again, so a rename is captured
+  once, the day it ships — confirm the 301 row in the CDX and do not list the
+  old URL in `extra-urls.txt`.
 - archive.today and perma.cc resist automation; each job summary carries
   prefilled links for them, and that click is the only manual step.
 - `LAST-RUN.md` is rewritten and committed by every run. GitHub pauses a

@@ -29,7 +29,9 @@ name: Daily full snapshot
 #   corpora.txt     -> every tracked *.md in each public corpus repository, minus
 #                      README/TIMESTAMPS/ZENODO. The hand-kept manifests were 12
 #                      papers behind the tree when this replaced them.
-#   extra-urls.txt  -> what cannot be derived: redirect URLs and unlisted pages.
+#   extra-urls.txt  -> what cannot be derived: pages kept out of a sitemap. Not
+#                      redirects — Save Page Now records a redirect's target, not
+#                      the 301, so a redirect is captured once, when it ships.
 # Each site repository's own snapshot.yml checks on every push that its host is
 # listed here and that every URL in its manifest is reachable by this run — so
 # drift shows up red in the repository that drifted.
