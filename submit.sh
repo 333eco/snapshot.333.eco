@@ -12,6 +12,13 @@
 # between requests (Save Page Now rate-limits), 30 s per request. The response
 # code is a heuristic — a 404 has accompanied a successful capture — so the
 # authoritative check is the CDX API, never this log.
+#
+# With IA_S3_ACCESS_KEY and IA_S3_SECRET_KEY in the environment it uses the Save
+# Page Now 2 API instead: authenticated, asynchronous (a job id comes back at
+# once), and with if_not_archived_within (IA_IF_NOT_ARCHIVED_WITHIN, default 20h)
+# so a page captured earlier the same day is not captured again. The key pair is
+# checked against the status endpoint first; a rejected pair falls back to the
+# anonymous path with a warning rather than failing every request.
 set -uo pipefail
 KIND="${1:-}"; ARG="${2:-}"
 SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/null}"
@@ -64,24 +71,58 @@ total="$(printf '%s\n' "$uniq_urls" | grep -c . || true)"
   echo ""
 } >> "$SUMMARY"
 
+# ---- Which Save Page Now: authenticated SPN2 when the key pair is present, else anonymous.
+AUTH=""
+PATH_NOTE="anonymous Save Page Now (set IA_S3_ACCESS_KEY / IA_S3_SECRET_KEY for SPN2)"
+if [ -n "${IA_S3_ACCESS_KEY:-}" ] && [ -n "${IA_S3_SECRET_KEY:-}" ] && [ -z "${DRY_RUN:-}" ]; then
+  AUTH="LOW ${IA_S3_ACCESS_KEY}:${IA_S3_SECRET_KEY}"
+  # A bad or expired pair must degrade visibly, not fail once per URL: ask the status endpoint first.
+  quota="$(curl -sS -m 30 -H 'Accept: application/json' -H "Authorization: $AUTH" -A "$UA" \
+    https://web.archive.org/save/status/user 2>/dev/null || true)"
+  if printf '%s' "$quota" | jq -e '.available != null' >/dev/null 2>&1; then
+    PATH_NOTE="SPN2, authenticated · quota $(printf '%s' "$quota" | jq -c '{available,processing,daily_captures,daily_captures_limit}')"
+  else
+    echo "::warning::IA_S3 key pair is set but the SPN2 status endpoint did not accept it (${quota:0:120}); using anonymous Save Page Now"
+    AUTH=""
+    PATH_NOTE="anonymous Save Page Now (the IA_S3 key pair was REJECTED — check the secrets)"
+  fi
+fi
+echo "Path: $PATH_NOTE"
+echo "_Path: ${PATH_NOTE}_" >> "$SUMMARY"
+echo "" >> "$SUMMARY"
+
 submitted=0
 while IFS= read -r url; do
   [ -n "$url" ] || continue
   enc="$(jq -rn --arg u "$url" '$u|@uri')"
   echo "Submitting to Internet Archive: $url"
   if [ -n "${DRY_RUN:-}" ]; then
-    code=DRY
+    result="DRY"
+  elif [ -n "$AUTH" ]; then
+    resp="$(curl -s -m 30 -X POST -H 'Accept: application/json' -H "Authorization: $AUTH" -A "$UA" \
+      --data-urlencode "url=$url" \
+      --data-urlencode "if_not_archived_within=${IA_IF_NOT_ARCHIVED_WITHIN:-20h}" \
+      https://web.archive.org/save || true)"
+    if printf '%s' "$resp" | jq -e '.job_id' >/dev/null 2>&1; then
+      result="queued $(printf '%s' "$resp" | jq -r '.job_id')"
+      msg="$(printf '%s' "$resp" | jq -r '.message // empty')"
+      [ -n "$msg" ] && result="$result — $msg"
+    else
+      msg="$(printf '%s' "$resp" | jq -r '.message // .status_ext // empty' 2>/dev/null || true)"
+      result="error: ${msg:-${resp:0:160}}"
+      [ -n "$resp" ] || result="error: no response"
+    fi
   else
     code="$(curl -s -L -m 30 -o /dev/null -w '%{http_code}' -A "$UA" \
       "https://web.archive.org/save/$url")"
-    code="${code:-000}"   # a timeout already prints 000; never double it
+    result="HTTP ${code:-000}"   # a timeout already prints 000; never double it
   fi
-  echo "  Internet Archive HTTP $code"
+  echo "  Internet Archive: $result"
   submitted=$((submitted + 1))
   {
     echo "### \`$url\`"
     echo ""
-    echo "- 🗄️ **Internet Archive** — submitted (HTTP $code) · [view captures](https://web.archive.org/web/*/$url)"
+    echo "- 🗄️ **Internet Archive** — $result · [view captures](https://web.archive.org/web/*/$url)"
     echo "- 📎 **archive.today** — *click to capture:* https://archive.ph/?url=$enc"
     echo "- ⚖️ **perma.cc** — *capture manually at* https://perma.cc/ · paste: \`$url\`"
     echo ""

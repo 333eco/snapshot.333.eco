@@ -1,7 +1,16 @@
-name: Weekly full snapshot
+name: Daily full snapshot
 
-# The Sunday full refresh of the estate's Internet Archive captures — the half of
-# the prior-art snapshot that used to run in every site repository.
+# The daily full refresh of the estate's Internet Archive captures — the half of
+# the prior-art snapshot that used to run in every site repository, once a week.
+#
+# CADENCE: daily at 06:00 UTC, raised from weekly on 2026-09-05 because the run
+# is free here. What the cadence buys is the corpus: a paper revised in the
+# publications repositories is captured by no push job (those repositories have
+# none), so its Wayback lag was up to seven days and is now one. Not every other
+# day, because "*/2" in cron is day-of-month arithmetic and skips a beat at every
+# 31-day month; daily is a property, every-other-day is a rule with an exception.
+# The Archive stores an unchanged page as a revisit record, so the cost to it of a
+# daily request for an unchanged URL is the request.
 #
 # WHY ONE PUBLIC REPOSITORY. Actions minutes bill the OWNER of a private
 # repository, and the same Sunday job in 22 private repositories cost about 580
@@ -34,6 +43,17 @@ name: Weekly full snapshot
 # job rewrites LAST-RUN.md and commits it: the run itself is the activity that
 # keeps the run scheduled. Its content is the record of what happened.
 #
+# THE ARCHIVE.ORG KEY (optional). With the repository secrets IA_S3_ACCESS_KEY and
+# IA_S3_SECRET_KEY set — an archive.org account's S3-style pair, from
+# https://archive.org/account/s3.php — submit.sh uses the Save Page Now 2 API:
+# authenticated, asynchronous (a job id back in a second instead of a held
+# connection), with if_not_archived_within so a page a push captured earlier the
+# same day is not captured twice. Without them it uses anonymous Save Page Now,
+# exactly as before. A key that is set but rejected degrades to anonymous with a
+# warning, never to 400 errors; the summary says which path ran. The key lives
+# ONLY here: the site repositories' push jobs stay secret-free by design, and
+# this repository has no pull_request trigger, so a fork cannot reach it.
+#
 # RATE LIMITS. Each host is its own job, so each gets its own runner IP, which
 # is how the 22 per-repo jobs already behaved; max-parallel keeps the total
 # request rate civil. thonly.org alone is ~180 routes at ~30 s each — about
@@ -41,7 +61,7 @@ name: Weekly full snapshot
 
 on:
   schedule:
-    - cron: "0 6 * * 0"
+    - cron: "0 6 * * *"
   workflow_dispatch:
     inputs:
       host:
@@ -95,6 +115,8 @@ jobs:
       - name: Submit every public route of ${{ matrix.host }}
         env:
           HOST: ${{ matrix.host }}
+          IA_S3_ACCESS_KEY: ${{ secrets.IA_S3_ACCESS_KEY }}
+          IA_S3_SECRET_KEY: ${{ secrets.IA_S3_SECRET_KEY }}
         run: ./submit.sh host "$HOST"
 
   corpora:
@@ -105,6 +127,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Submit every tracked paper in the public corpora
+        env:
+          IA_S3_ACCESS_KEY: ${{ secrets.IA_S3_ACCESS_KEY }}
+          IA_S3_SECRET_KEY: ${{ secrets.IA_S3_SECRET_KEY }}
         run: ./submit.sh corpora
 
   record:
@@ -120,7 +145,7 @@ jobs:
         run: |
           set -uo pipefail
           {
-            echo "# Last weekly full snapshot"
+            echo "# Last daily full snapshot"
             echo ""
             echo "- **Ran:** $(date -u '+%Y-%m-%d %H:%M UTC') (\`${GITHUB_EVENT_NAME}\`)"
             echo "- **Hosts job:** ${HOSTS_RESULT}"
@@ -132,6 +157,6 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add LAST-RUN.md
-          git commit -m "weekly snapshot $(date -u +%Y-%m-%d): hosts ${HOSTS_RESULT}, corpora ${CORPORA_RESULT}" || { echo "Nothing to commit."; exit 0; }
+          git commit -m "daily snapshot $(date -u +%Y-%m-%d): hosts ${HOSTS_RESULT}, corpora ${CORPORA_RESULT}" || { echo "Nothing to commit."; exit 0; }
           git pull --rebase --autostash
           git push
