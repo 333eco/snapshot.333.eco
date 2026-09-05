@@ -64,7 +64,7 @@ uniq_urls="$(printf '%s\n' ${urls[@]+"${urls[@]}"} | awk 'NF && !seen[$0]++')"
 total="$(printf '%s\n' "$uniq_urls" | grep -c . || true)"
 
 {
-  echo "## Weekly full snapshot — \`$LABEL\` — $(date -u '+%Y-%m-%d %H:%M UTC')"
+  echo "## Daily full snapshot — \`$LABEL\` — $(date -u '+%Y-%m-%d %H:%M UTC')"
   echo ""
   echo "**$total** URL(s). Internet Archive submitted automatically; **archive.today** and **perma.cc** are manual — links per URL below."
   echo "The response code is a heuristic; the authoritative check is the CDX API."

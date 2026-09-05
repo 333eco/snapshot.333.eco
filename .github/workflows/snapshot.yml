@@ -77,7 +77,7 @@ permissions:
   contents: write # the record job commits LAST-RUN.md
 
 concurrency:
-  group: weekly-snapshot
+  group: full-snapshot
   cancel-in-progress: false
 
 jobs:
