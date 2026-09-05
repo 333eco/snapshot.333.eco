@@ -1,0 +1,27 @@
+# Every host whose LIVE https://<host>/sitemap.xml the weekly run reads.
+# One per line. Each site's own snapshot.yml checks, on every push, that its
+# host is listed here — so a missing line turns THAT repo's run red, not this one.
+333.eco
+heartbank.ceo
+thank.heartbank.ceo
+heartbank.com
+thank.heartbank.com
+heartbank.me
+thank.heartbank.me
+heartbank.net
+thank.heartbank.net
+heartbank.org
+thank.heartbank.org
+heartbank.us
+thank.heartbank.us
+missaquarius.com
+missaquarius.org
+playsey.app
+sayyourname.app
+seysays.org
+siliconwat.com
+siliconwat.dev
+siliconwat.org
+thonly.com
+thonly.net
+thonly.org

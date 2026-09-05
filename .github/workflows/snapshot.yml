@@ -1,0 +1,137 @@
+name: Weekly full snapshot
+
+# The Sunday full refresh of the estate's Internet Archive captures — the half of
+# the prior-art snapshot that used to run in every site repository.
+#
+# WHY ONE PUBLIC REPOSITORY. Actions minutes bill the OWNER of a private
+# repository, and the same Sunday job in 22 private repositories cost about 580
+# minutes a month, most of it a runner sleeping between rate-limited requests.
+# In a public repository the identical job costs nothing. Nothing here is
+# secret: every URL is public by definition (it is being sent to a public
+# archive), each site's sitemap.xml is public, the corpora are public, and Save
+# Page Now takes no credential. So the saving is a property of where the job
+# runs, not a budget somebody has to keep watching.
+#
+# WHAT IT READS, and why nothing is hand-listed that can be derived:
+#   hosts.txt       -> https://<host>/sitemap.xml, LIVE — the deployed sitemap is
+#                      the set of public routes, and it can be ahead of any
+#                      checkout (thonly.org's live one listed 180 routes to the
+#                      working tree's 134 on the day this was written).
+#   corpora.txt     -> every tracked *.md in each public corpus repository, minus
+#                      README/TIMESTAMPS/ZENODO. The hand-kept manifests were 12
+#                      papers behind the tree when this replaced them.
+#   extra-urls.txt  -> what cannot be derived: redirect URLs and unlisted pages.
+# Each site repository's own snapshot.yml checks on every push that its host is
+# listed here and that every URL in its manifest is reachable by this run — so
+# drift shows up red in the repository that drifted.
+#
+# THE PUSH HALF STAYS WHERE IT WAS. A site repository's snapshot.yml still
+# submits, on push, the pages that push changed — it needs the source tree to
+# know which, and after the 2026-09-05 fix that is about a minute.
+#
+# THE KEEP-ALIVE. GitHub pauses a scheduled workflow after 60 days without
+# repository activity. This repository is rarely touched by hand, so the last
+# job rewrites LAST-RUN.md and commits it: the run itself is the activity that
+# keeps the run scheduled. Its content is the record of what happened.
+#
+# RATE LIMITS. Each host is its own job, so each gets its own runner IP, which
+# is how the 22 per-repo jobs already behaved; max-parallel keeps the total
+# request rate civil. thonly.org alone is ~180 routes at ~30 s each — about
+# 90 minutes — which is why the per-job timeout is generous.
+
+on:
+  schedule:
+    - cron: "0 6 * * 0"
+  workflow_dispatch:
+    inputs:
+      host:
+        description: "Run only this host (blank = every host in hosts.txt)"
+        required: false
+        default: ""
+      corpora:
+        description: "Also submit the corpus sources"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write # the record job commits LAST-RUN.md
+
+concurrency:
+  group: weekly-snapshot
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      hosts: ${{ steps.plan.outputs.hosts }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: plan
+        env:
+          ONLY: ${{ github.event.inputs.host }}
+        run: |
+          set -uo pipefail
+          if [ -n "$ONLY" ]; then
+            HOSTS="$(printf '%s' "$ONLY" | tr -d ' ')"
+          else
+            HOSTS="$(sed 's/#.*//' hosts.txt | tr -d ' \t' | grep -v '^$')"
+          fi
+          JSON="$(printf '%s\n' $HOSTS | jq -R . | jq -sc .)"
+          echo "hosts=$JSON" >> "$GITHUB_OUTPUT"
+          echo "Hosts: $JSON"
+
+  hosts:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        host: ${{ fromJSON(needs.plan.outputs.hosts) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Submit every public route of ${{ matrix.host }}
+        env:
+          HOST: ${{ matrix.host }}
+        run: ./submit.sh host "$HOST"
+
+  corpora:
+    needs: plan
+    if: github.event.inputs.corpora != 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - name: Submit every tracked paper in the public corpora
+        run: ./submit.sh corpora
+
+  record:
+    needs: [hosts, corpora]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write LAST-RUN.md and commit it
+        env:
+          HOSTS_RESULT: ${{ needs.hosts.result }}
+          CORPORA_RESULT: ${{ needs.corpora.result }}
+        run: |
+          set -uo pipefail
+          {
+            echo "# Last weekly full snapshot"
+            echo ""
+            echo "- **Ran:** $(date -u '+%Y-%m-%d %H:%M UTC') (\`${GITHUB_EVENT_NAME}\`)"
+            echo "- **Hosts job:** ${HOSTS_RESULT}"
+            echo "- **Corpora job:** ${CORPORA_RESULT}"
+            echo "- **Run:** ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo ""
+            echo "_Rewritten by every run. Its purpose is the commit: GitHub pauses a scheduled workflow after 60 days without repository activity, and this file is the activity. Per-URL results are in the run's job summaries._"
+          } > LAST-RUN.md
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add LAST-RUN.md
+          git commit -m "weekly snapshot $(date -u +%Y-%m-%d): hosts ${HOSTS_RESULT}, corpora ${CORPORA_RESULT}" || { echo "Nothing to commit."; exit 0; }
+          git pull --rebase --autostash
+          git push

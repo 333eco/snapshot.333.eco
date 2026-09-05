@@ -1,0 +1,6 @@
+# PUBLIC corpus repositories. The weekly run clones each (no token) and submits
+# the raw.githubusercontent.com URL of every tracked *.md except README.md,
+# TIMESTAMPS.md and ZENODO.md — derived from the tree, never hand-listed. The
+# hand-kept manifests were 12 papers behind the tree when this replaced them.
+thonly/publications
+HeartBank/publications

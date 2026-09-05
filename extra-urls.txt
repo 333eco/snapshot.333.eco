@@ -1,0 +1,20 @@
+# URLs the weekly run cannot derive: not in any live sitemap and not a corpus
+# source. Redirect URLs belong here — Wayback records the 301 itself, which is
+# what keeps a renamed paper's citations stable. One per line.
+
+# heartbank.net — the retired /research mirror, now 301s to thonly.org
+https://heartbank.net/research
+https://heartbank.net/research/verified-human-anonymous-local-giving
+https://heartbank.net/research/mechanical-heart
+https://heartbank.net/research/tipitaka-alignment-substrate
+https://heartbank.net/research/two-singularities
+https://heartbank.net/research/agi-monks-caretaker-not-ordained
+https://heartbank.net/research/b-tag-post-payment-economy
+https://heartbank.net/research/each-life-as-cosmic-coordinate
+https://heartbank.net/research/kids-as-triggers-self-thanking
+https://heartbank.net/research/brand-identity-as-architecture
+https://heartbank.net/research/four-body-architecture
+https://heartbank.net/research/dual-currency-reciprocity
+
+# thonly.org — listed in its manifest, deliberately outside its sitemap
+https://thonly.org/research/template
