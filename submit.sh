@@ -137,8 +137,12 @@ while IFS= read -r url; do
       [ -n "$resp" ] || result="error: no response"
     fi
   else
+    # `|| true` matches the keyed branch above and the site repos' snapshot.yml:
+    # submission is fail-open, and a curl timeout (exit 28) must not end the run.
+    # Dormant here — this script carries no `set -e` — but it is one shebang away
+    # from the bug that took the 22 site workflows down on 2026-09-05.
     code="$(curl -s -L -m 30 -o /dev/null -w '%{http_code}' -A "$UA" \
-      "https://web.archive.org/save/$url")"
+      "https://web.archive.org/save/$url" || true)"
     result="HTTP ${code:-000}"   # a timeout already prints 000; never double it
   fi
   echo "  Internet Archive: $result"
