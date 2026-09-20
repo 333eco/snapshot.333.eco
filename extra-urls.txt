@@ -11,3 +11,5 @@
 
 # thonly.org — listed in its manifest, deliberately outside its sitemap
 https://thonly.org/research/template
+https://github.com/thonly/two-singularities
+https://github.com/thonly/two-singularities/blob/main/protocol/pilot-2026.md
