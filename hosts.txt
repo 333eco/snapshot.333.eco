@@ -2,6 +2,7 @@
 # One per line. Each site's own snapshot.yml checks, on every push, that its
 # host is listed here — so a missing line turns THAT repo's run red, not this one.
 333.eco
+brand.333.eco
 heartbank.ceo
 thank.heartbank.ceo
 heartbank.com
