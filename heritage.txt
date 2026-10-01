@@ -1,0 +1,12 @@
+# PUBLIC corpus repositories that Software Heritage keeps, history and all.
+# heritage.sh asks Software Heritage what it holds for each one and files a
+# Save Code Now request only when GitHub's head is newer than that.
+#
+# Hand-listed on purpose: "public" is derivable, "corpus" is a ruling. Ruled
+# 2026-10-01 (archive.today retired as a leg to complete; Software Heritage is
+# the second custodian). Only a PUBLIC repository may ever appear here — a save
+# request sends the name to a public archive, and the archive keeps what it takes.
+thonly/publications
+HeartBank/publications
+thonly/two-singularities
+SiliconWat/formal-abhidhamma

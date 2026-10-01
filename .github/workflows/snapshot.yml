@@ -137,8 +137,21 @@ jobs:
           IA_S3_SECRET_KEY: ${{ secrets.IA_S3_SECRET_KEY }}
         run: ./submit.sh corpora
 
+  # The second custodian (ruled 2026-10-01). Software Heritage keeps each corpus
+  # repository with its whole history; heritage.sh files a Save Code Now request
+  # only when GitHub's head is newer than what the latest snapshot holds, and
+  # counts a save only when the snapshot points at that commit. Anonymous API, no
+  # secret, no CAPTCHA — so this needs no person, unlike archive.today did.
+  heritage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Keep the public corpora archived at Software Heritage
+        run: ./heritage.sh
+
   record:
-    needs: [hosts, corpora]
+    needs: [hosts, corpora, heritage]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -147,6 +160,7 @@ jobs:
         env:
           HOSTS_RESULT: ${{ needs.hosts.result }}
           CORPORA_RESULT: ${{ needs.corpora.result }}
+          HERITAGE_RESULT: ${{ needs.heritage.result }}
         run: |
           set -uo pipefail
           {
@@ -155,6 +169,7 @@ jobs:
             echo "- **Ran:** $(date -u '+%Y-%m-%d %H:%M UTC') (\`${GITHUB_EVENT_NAME}\`)"
             echo "- **Hosts job:** ${HOSTS_RESULT}"
             echo "- **Corpora job:** ${CORPORA_RESULT}"
+            echo "- **Software Heritage job:** ${HERITAGE_RESULT}"
             echo "- **Run:** ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
             echo ""
             echo "_Rewritten by every run. Its purpose is the commit: GitHub pauses a scheduled workflow after 60 days without repository activity, and this file is the activity. Per-URL results are in the run's job summaries._"
@@ -162,6 +177,6 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add LAST-RUN.md
-          git commit -m "daily snapshot $(date -u +%Y-%m-%d): hosts ${HOSTS_RESULT}, corpora ${CORPORA_RESULT}" || { echo "Nothing to commit."; exit 0; }
+          git commit -m "daily snapshot $(date -u +%Y-%m-%d): hosts ${HOSTS_RESULT}, corpora ${CORPORA_RESULT}, heritage ${HERITAGE_RESULT}" || { echo "Nothing to commit."; exit 0; }
           git pull --rebase --autostash
           git push

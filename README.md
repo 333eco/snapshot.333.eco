@@ -1,8 +1,10 @@
 # snapshot.333.eco
 
 The estate's daily Internet Archive refresh, run from one public repository for
-every site and both public corpora. It is the full-refresh half of the prior-art
-snapshot; the push half stays in each site repository.
+every site and both public corpora, and its second custodian: Software Heritage,
+which keeps the public corpus repositories with their whole history. It is the
+full-refresh half of the prior-art snapshot; the push half stays in each site
+repository.
 
 **Public on purpose.** Nothing here is secret — every URL is being sent to a
 public archive, each sitemap is public, the corpora are public, and Save Page
@@ -28,6 +30,7 @@ estate's convention for institution-wide repositories, as `shared.333.eco` does.
 | `hosts.txt` | fetches `https://<host>/sitemap.xml` **live** and submits every `<loc>` |
 | `corpora.txt` | clones each public corpus repository and submits the raw URL of every tracked `*.md` except `README.md`, `TIMESTAMPS.md`, `ZENODO.md` |
 | `extra-urls.txt` | what cannot be derived — pages kept out of a sitemap (not redirects; see the file's header) |
+| `heritage.txt` | the public corpus repositories Software Heritage keeps — see below |
 
 Nothing derivable is hand-listed. The live sitemap is the set of public routes
 and can be ahead of any checkout; the corpus tree is the set of papers and the
@@ -43,6 +46,28 @@ cron is day-of-month arithmetic and skips a beat at every 31-day month; daily is
 a property, every-other-day is a rule with an exception. The Archive stores an
 unchanged page as a revisit record, so what a daily request for an unchanged URL
 costs it is the request.
+
+## Software Heritage — the second custodian
+
+Ruled 2026-10-01. Until then every third-party copy of the corpus sat with one
+organisation, and the Internet Archive answered *"Temporarily Offline"* in the
+middle of the check that led to the ruling. archive.today had been meant as the
+second copy, but it resists automation by design and stood at 2 captures of 232.
+
+`heritage.sh` reads each repository in `heritage.txt`, compares GitHub's head
+with the head that Software Heritage's latest snapshot holds, and files a
+[Save Code Now](https://archive.softwareheritage.org/save/) request only when
+they differ — so an unchanged repository costs Software Heritage nothing. A save
+counts only when the new snapshot's default branch points at the commit that was
+asked for. The API is anonymous: no secret, no CAPTCHA, no person.
+
+One save covers every revision of every file, because the archive takes the git
+history. What it dates is its own visit; commit dates inside git are written by
+the committer and prove nothing alone. A paper may point at its repository's
+origin page — `https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/<repo>`
+— but never at the identifier of a snapshot that contains the paper itself: the
+identifier cannot exist until the paper does, which is the same loop that ruled
+`sha256:` out of front matter.
 
 ## The archive.org key (optional)
 
@@ -98,19 +123,22 @@ locally, and `DRY_RUN=1` lists what would be submitted without submitting.
 - The submit response code is a heuristic. A 404 has accompanied a successful
   capture. The authoritative check is the CDX API:
   `https://web.archive.org/cdx/search/cdx?url=<URL>&output=json&fl=timestamp,statuscode`
-- Save Page Now renders a single-page app's route and metadata at a timestamp;
-  imperfect SPA fidelity is an accepted prior-art limitation.
+- Our routes are prerendered, so what Save Page Now stores for a route already
+  holds the text: measured 2026-10-01 on two papers, the stored HTML carried the
+  full body, the DOI and the licence. Whether the Wayback *replay* draws the page
+  well was not measured; the stored bytes are the evidence either way.
 - For a redirect it follows the hop and records the **target**. The 301 row that
   joins an old URL to a new one was recorded on first submission (June 2026 for
   the heartbank.net research mirror) and never again, so a rename is captured
   once, the day it ships — confirm the 301 row in the CDX and do not list the
   old URL in `extra-urls.txt`.
-- archive.today resists automation and is a **browser leg**, not a job here: `curl`
-  gets a `429` and Chrome gets a Cloudflare interstitial, which a person must clear.
-  The estate runs it with the `/snapshot` skill over the corpus papers — the
-  prior-art-bearing surface — and records each capture in `archive-today.tsv`. That
-  file is a cache; `https://archive.ph/newest/<url>` is authoritative. The per-URL
-  links in each job summary still cover anything outside the corpus.
+- **archive.today was retired as a leg on 2026-10-01.** It resists automation
+  (`curl` gets a `429`, Chrome a Cloudflare check a person must clear) and its one
+  advantage — rendering the app — buys nothing on prerendered routes. The
+  `/snapshot` skill still exists for a one-off capture, and `archive-today.tsv`
+  records the few there are; it is a cache, and `https://archive.ph/newest/<url>`
+  is authoritative. Papers that still advertise an archive.today mirror are
+  corrected as each is revised, the same way as the perma.cc lines.
 - **perma.cc was ruled out of the estate on 2026-09-05.** Its free tier is ten links
   on a one-time trial, not ten a month, after which an individual must pay or be
   affiliated with a registrar; ten cannot mirror 136 papers. Papers that still
