@@ -125,8 +125,10 @@ locally, and `DRY_RUN=1` lists what would be submitted without submitting.
   `https://web.archive.org/cdx/search/cdx?url=<URL>&output=json&fl=timestamp,statuscode`
 - Our routes are prerendered, so what Save Page Now stores for a route already
   holds the text: measured 2026-10-01 on two papers, the stored HTML carried the
-  full body, the DOI and the licence. Whether the Wayback *replay* draws the page
-  well was not measured; the stored bytes are the evidence either way.
+  full body, the DOI and the licence. The *replay* was measured the same day on
+  seven pages (papers, landing pages, a static letter, a raw markdown file): all
+  seven rendered in full, and every resource came from archive.org — none from
+  our live sites. Desktop Chrome only; mobile was not tested.
 - For a redirect it follows the hop and records the **target**. The 301 row that
   joins an old URL to a new one was recorded on first submission (June 2026 for
   the heartbank.net research mirror) and never again, so a rename is captured
