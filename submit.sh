@@ -35,6 +35,12 @@ case "$KIND" in
     fi
     while IFS= read -r u; do [ -n "$u" ] && urls+=("$u"); done < <(
       printf '%s' "$SM" | grep -oE '<loc>[^<]+</loc>' | sed -E 's|</?loc>||g; s/^[[:space:]]+//; s/[[:space:]]+$//')
+    # A sitemap that ANSWERS but lists nothing is the quieter failure: a single-page app serves its own
+    # index.html at every path, /sitemap.xml included, so the fetch succeeds, no <loc> is found, and the
+    # host contributes zero URLs with no message at all (thank.heartbank.ceo until 2026-10-05). Say so.
+    if [ -n "$SM" ] && [ "${#urls[@]}" -eq 0 ]; then
+      echo "::warning::${HOST}: sitemap.xml answered but holds no <loc> entries (an app shell, not a sitemap?) — only extra-urls.txt entries will be submitted"
+    fi
     while IFS= read -r u; do [ -n "$u" ] && urls+=("$u"); done < <(
       sed 's/#.*//' extra-urls.txt | tr -d ' \t' | grep -E "^https?://${HOST}(/|$)" || true)
     LABEL="$HOST"
