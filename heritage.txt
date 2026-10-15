@@ -10,3 +10,7 @@ thonly/publications
 HeartBank/publications
 thonly/two-singularities
 SiliconWat/formal-abhidhamma
+thonly/silicon-simile
+thonly/the-calculus-of-moments
+thonly/the-river-that-reverses
+thonly/the-seventh-of-january
