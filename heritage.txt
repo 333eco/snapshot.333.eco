@@ -14,3 +14,5 @@ thonly/silicon-simile
 thonly/the-calculus-of-moments
 thonly/the-river-that-reverses
 thonly/the-seventh-of-january
+# Added 2026-10-15 (founder: "add to the daily Software Heritage saves"): the capacity-funded model, public, CC0.
+SiliconWat/capacity-funded-ai
