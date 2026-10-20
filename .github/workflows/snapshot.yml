@@ -162,21 +162,31 @@ jobs:
           CORPORA_RESULT: ${{ needs.corpora.result }}
           HERITAGE_RESULT: ${{ needs.heritage.result }}
         run: |
-          set -uo pipefail
-          {
-            echo "# Last daily full snapshot"
-            echo ""
-            echo "- **Ran:** $(date -u '+%Y-%m-%d %H:%M UTC') (\`${GITHUB_EVENT_NAME}\`)"
-            echo "- **Hosts job:** ${HOSTS_RESULT}"
-            echo "- **Corpora job:** ${CORPORA_RESULT}"
-            echo "- **Software Heritage job:** ${HERITAGE_RESULT}"
-            echo "- **Run:** ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-            echo ""
-            echo "_Rewritten by every run. Its purpose is the commit: GitHub pauses a scheduled workflow after 60 days without repository activity, and this file is the activity. Per-URL results are in the run's job summaries._"
-          } > LAST-RUN.md
+          set -euo pipefail
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add LAST-RUN.md
-          git commit -m "daily snapshot $(date -u +%Y-%m-%d): hosts ${HOSTS_RESULT}, corpora ${CORPORA_RESULT}, heritage ${HERITAGE_RESULT}" || { echo "Nothing to commit."; exit 0; }
-          git pull --rebase --autostash
-          git push
+          for attempt in 1 2 3 4 5; do
+            # Another scheduled or manually retried run may update this same file
+            # while the host and corpus jobs are running. Rebuild on the current
+            # remote head after each push race; rebasing two generated records
+            # always conflicts because both legitimately replace LAST-RUN.md.
+            git fetch origin main
+            git reset --hard origin/main
+            {
+              echo "# Last daily full snapshot"
+              echo ""
+              echo "- **Ran:** $(date -u '+%Y-%m-%d %H:%M UTC') (\`${GITHUB_EVENT_NAME}\`)"
+              echo "- **Hosts job:** ${HOSTS_RESULT}"
+              echo "- **Corpora job:** ${CORPORA_RESULT}"
+              echo "- **Software Heritage job:** ${HERITAGE_RESULT}"
+              echo "- **Run:** ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+              echo ""
+              echo "_Rewritten by every run. Its purpose is the commit: GitHub pauses a scheduled workflow after 60 days without repository activity, and this file is the activity. Per-URL results are in the run's job summaries._"
+            } > LAST-RUN.md
+            git add LAST-RUN.md
+            git commit -m "daily snapshot $(date -u +%Y-%m-%d): hosts ${HOSTS_RESULT}, corpora ${CORPORA_RESULT}, heritage ${HERITAGE_RESULT}"
+            if git push; then exit 0; fi
+            sleep "$attempt"
+          done
+          echo "::error::could not publish LAST-RUN.md after 5 concurrent-update retries"
+          exit 1
