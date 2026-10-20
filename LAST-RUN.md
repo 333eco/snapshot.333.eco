@@ -1,9 +1,9 @@
 # Last daily full snapshot
 
-- **Ran:** 2026-10-20 04:33 UTC (`workflow_dispatch`)
+- **Ran:** 2026-10-20 13:37 UTC (`schedule`)
 - **Hosts job:** success
-- **Corpora job:** skipped
+- **Corpora job:** success
 - **Software Heritage job:** success
-- **Run:** https://github.com/333eco/snapshot.333.eco/actions/runs/39369294507
+- **Run:** https://github.com/333eco/snapshot.333.eco/actions/runs/39412632728
 
 _Rewritten by every run. Its purpose is the commit: GitHub pauses a scheduled workflow after 60 days without repository activity, and this file is the activity. Per-URL results are in the run's job summaries._
