@@ -13,3 +13,7 @@
 https://thonly.org/research/template
 https://github.com/thonly/two-singularities
 https://github.com/thonly/two-singularities/blob/main/protocol/pilot-2026.md
+
+# heartbank.org — retired single-page-app routes, still cited and still listed by search engines (/about is now a forward, /login a signpost); outside the sitemap on purpose
+https://heartbank.org/about
+https://heartbank.org/login
