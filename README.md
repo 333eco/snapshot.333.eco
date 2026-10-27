@@ -1,6 +1,6 @@
 # snapshot.333.eco
 
-The estate's daily Internet Archive refresh, run from one public repository for
+The estate's weekly Internet Archive refresh, run from one public repository for
 every site and both public corpora, and its second custodian: Software Heritage,
 which keeps the public corpus repositories with their whole history. It is the
 full-refresh half of the prior-art snapshot; the push half stays in each site
@@ -38,14 +38,14 @@ hand-kept manifests were twelve papers behind it on the day this replaced them.
 
 ## Cadence
 
-Daily, 06:00 UTC — raised from weekly on 2026-09-05, because the run is free
-here. What the cadence buys is the corpus: a paper revised in the publications
-repositories is captured by no push job (those repositories have none), so its
-Wayback lag was up to seven days and is now one. Not every other day: `*/2` in
-cron is day-of-month arithmetic and skips a beat at every 31-day month; daily is
-a property, every-other-day is a rule with an exception. The Archive stores an
-unchanged page as a revisit record, so what a daily request for an unchanged URL
-costs it is the request.
+Weekly, Sundays 06:00 UTC. It was daily from 2026-09-05 (a revised paper's Wayback
+lag fell from seven days to one) and returned to weekly on 2026-10-27, on the
+founder's word, to cut Firebase Hosting egress: the full crawl loads every route of
+thonly.org in a cold headless browser. The cost is the lag: a revised corpus paper
+now waits up to seven days. A site page changed by a push is still captured at once by
+that repository's push-mode `snapshot.yml`. For a paper that cannot wait, run the
+workflow by hand. Weekly keeps the schedule alive past GitHub's 60-day pause, because
+each run commits `LAST-RUN.md`.
 
 ## Software Heritage — the second custodian
 
