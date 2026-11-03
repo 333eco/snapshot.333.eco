@@ -95,7 +95,7 @@ jobs:
     outputs:
       hosts: ${{ steps.plan.outputs.hosts }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: plan
         env:
           ONLY: ${{ github.event.inputs.host }}
@@ -120,7 +120,7 @@ jobs:
       matrix:
         host: ${{ fromJSON(needs.plan.outputs.hosts) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Submit every public route of ${{ matrix.host }}
         env:
           HOST: ${{ matrix.host }}
@@ -134,7 +134,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 240
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Submit every tracked paper in the public corpora
         env:
           IA_S3_ACCESS_KEY: ${{ secrets.IA_S3_ACCESS_KEY }}
@@ -150,7 +150,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Keep the public corpora archived at Software Heritage
         run: ./heritage.sh
 
@@ -159,7 +159,7 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Write LAST-RUN.md and commit it
         env:
           HOSTS_RESULT: ${{ needs.hosts.result }}
