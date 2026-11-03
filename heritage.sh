@@ -14,16 +14,23 @@
 # revision of every file. What it dates is its own VISIT; the commit dates inside
 # git are self-reported and prove nothing alone.
 #
-# Exit 1 if any save failed or timed out, or a public check failed outright, so
-# the run turns red and LAST-RUN.md says so. A head that moved again during the
-# save is a warning, not a failure: tomorrow's run takes it.
+# Exit 1 if any save failed, a public check failed outright, or an origin has had
+# no successful save for HERITAGE_STALL_DAYS, so the run turns red and LAST-RUN.md
+# says so. Two things are warnings, not failures, because the next run takes them:
+# a head that moved again during the save, and a save still in Software Heritage's
+# queue when this job stops waiting. Their queue is theirs: request 2575360 ended
+# 'succeeded' five minutes after a 20-minute wait called it a failure (2026-10-25),
+# and a request of 2026-10-26 took over two hours, past the job's own timeout.
 set -uo pipefail
 export GIT_TERMINAL_PROMPT=0   # a missing or private repo must fail, never wait for a password
 SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/null}"
 API='https://archive.softwareheritage.org/api/1'
 UA='HeartBank-snapshot-bot (+https://github.com/333eco/snapshot.333.eco)'
 POLL="${HERITAGE_POLL_SECONDS:-30}"
-TRIES="${HERITAGE_POLL_TRIES:-40}"   # 40 × 30 s = 20 minutes per save
+# One budget for ALL the waits, kept under the job's timeout-minutes in snapshot.yml.
+# Per save, ten queued requests could outlast the job and get it cancelled.
+WAIT="${HERITAGE_WAIT_SECONDS:-3600}"
+STALL_DAYS="${HERITAGE_STALL_DAYS:-21}"   # three weekly runs
 fail=0
 
 get() { curl -sS -m 60 -A "$UA" "$@"; }
@@ -80,16 +87,36 @@ while IFS= read -r repo; do
   pending_repo+=("$repo"); pending_id+=("$id"); pending_head+=("$head"); pending_branch+=("$branch")
 done < <(sed 's/#.*//' heritage.txt | tr -d ' \t' | grep -v '^$')
 
+# Days since this origin's last successful save, empty if none is on record.
+days_since_success() {
+  get "${API}/origin/save/git/url/$1/" 2>/dev/null | jq -r '
+    [.[] | select(.save_task_status == "succeeded") | .save_request_date | .[0:19] + "Z" | fromdate]
+    | if length == 0 then empty else ((now - max) / 86400 | floor) end' 2>/dev/null || true
+}
+
 # Wait for every accepted request, then check what each snapshot actually holds.
+deadline=$((SECONDS + WAIT))
 for i in "${!pending_id[@]}"; do
   repo="${pending_repo[$i]}"; id="${pending_id[$i]}"; head="${pending_head[$i]}"; branch="${pending_branch[$i]}"
   task=""; snp=""
-  for _ in $(seq 1 "$TRIES"); do
+  while :; do   # always at least one read, however little budget is left
     r="$(get "${API}/origin/save/${id}/" || true)"
     task="$(printf '%s' "$r" | jq -r '.save_task_status // empty' 2>/dev/null || true)"
     case "$task" in succeeded|failed) break ;; esac
+    [ "$SECONDS" -lt "$deadline" ] || break
     sleep "$POLL"
   done
+  if [ -n "$task" ] && [ "$task" != "succeeded" ] && [ "$task" != "failed" ]; then
+    age="$(days_since_success "https://github.com/${repo}")"
+    if [ -n "$age" ] && [ "$age" -lt "$STALL_DAYS" ]; then
+      echo "::warning::${repo}: save ${id} still '${task}' in Software Heritage's queue when the wait ended; last success ${age} days ago; the next run checks it"
+      echo "| \`${repo}\` | \`${head:0:7}\` | — | ⏳ still ${task} (request ${id}) | — |" >> "$SUMMARY"
+      continue
+    fi
+    echo "::error::${repo}: save ${id} still '${task}', and no successful save in ${age:-any recorded} days (limit ${STALL_DAYS})"
+    echo "| \`${repo}\` | \`${head:0:7}\` | — | ❌ stalled: ${task} (request ${id}) | — |" >> "$SUMMARY"
+    fail=1; continue
+  fi
   if [ "$task" != "succeeded" ]; then
     echo "::error::${repo}: save ${id} ended '${task:-unknown}'"
     echo "| \`${repo}\` | \`${head:0:7}\` | — | ❌ save ${task:-timed out} (request ${id}) | — |" >> "$SUMMARY"
@@ -102,7 +129,7 @@ for i in "${!pending_id[@]}"; do
     echo "${repo}: saved ${head:0:7} → ${snp}"
     echo "| \`${repo}\` | \`${head:0:7}\` | — | ✅ saved, head verified | \`${snp}\` |" >> "$SUMMARY"
   else
-    echo "::warning::${repo}: snapshot ${snp} holds ${got:0:7}, not ${head:0:7} — the head moved during the save; tomorrow's run takes it"
+    echo "::warning::${repo}: snapshot ${snp} holds ${got:0:7}, not ${head:0:7} — the head moved during the save; the next run takes it"
     echo "| \`${repo}\` | \`${head:0:7}\` | — | ⚠️ saved \`${got:0:7}\`, head moved | \`${snp}\` |" >> "$SUMMARY"
   fi
 done

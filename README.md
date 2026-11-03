@@ -61,6 +61,11 @@ they differ — so an unchanged repository costs Software Heritage nothing. A sa
 counts only when the new snapshot's default branch points at the commit that was
 asked for. The API is anonymous: no secret, no CAPTCHA, no person.
 
+A save still in Software Heritage's queue when the job's one-hour wait ends is a
+warning, because their queue is not our failure and the next run checks the head
+again. The run goes red for a save that failed, or for an origin with no successful
+save in 21 days, so a queue that truly stalls still shows.
+
 One save covers every revision of every file, because the archive takes the git
 history. What it dates is its own visit; commit dates inside git are written by
 the committer and prove nothing alone. A paper may point at its repository's
@@ -113,7 +118,7 @@ cover it now, run the workflow by hand with the host as input.
 
 ## Running by hand
 
-**Actions → Daily full snapshot → Run workflow.** Leave `host` blank for
+**Actions → Weekly full snapshot → Run workflow.** Leave `host` blank for
 everything, or name one host; untick `corpora` to skip the corpus sources.
 `./submit.sh host thonly.org` and `./submit.sh corpora` run the same code
 locally, and `DRY_RUN=1` lists what would be submitted without submitting.
