@@ -18,3 +18,5 @@ thonly/the-seventh-of-january
 SiliconWat/capacity-funded-ai
 # Added 2026-10-17 (founder: "add software heritage", with the go): For the Good of Both, public, CC0.
 SiliconWat/for-the-good-of-both
+# Added 2026-11-13 (founder: "join the daily Software Heritage"): the B-PoH signed-statements spec, public, CC0.
+333eco/b-poh-statements
