@@ -61,6 +61,9 @@ they differ — so an unchanged repository costs Software Heritage nothing. A sa
 counts only when the new snapshot's default branch points at the commit that was
 asked for. The API is anonymous: no secret, no CAPTCHA, no person.
 
+It runs **daily** in its own workflow, `heritage.yml` (06:30 UTC), since 2026-11-20 — free in this public
+repository and never on Firebase Hosting; from 2026-10-27 it had ridden the weekly snapshot.
+
 A save still in Software Heritage's queue when the job's one-hour wait ends is a
 warning, because their queue is not our failure and the next run checks the head
 again. The run goes red for a save that failed, or for an origin with no successful

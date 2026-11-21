@@ -30,7 +30,7 @@ POLL="${HERITAGE_POLL_SECONDS:-30}"
 # One budget for ALL the waits, kept under the job's timeout-minutes in snapshot.yml.
 # Per save, ten queued requests could outlast the job and get it cancelled.
 WAIT="${HERITAGE_WAIT_SECONDS:-3600}"
-STALL_DAYS="${HERITAGE_STALL_DAYS:-21}"   # three weekly runs
+STALL_DAYS="${HERITAGE_STALL_DAYS:-21}"   # three weeks
 fail=0
 
 get() { curl -sS -m 60 -A "$UA" "$@"; }

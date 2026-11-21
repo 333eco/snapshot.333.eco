@@ -1,0 +1,40 @@
+name: Daily Software Heritage save
+
+# The second custodian (ruled 2026-10-01): Software Heritage keeps each public
+# corpus repository with its whole history. heritage.sh files a Save Code Now
+# request only when GitHub's head is newer than what the latest snapshot holds,
+# and counts a save only when the snapshot points at that commit. Anonymous API,
+# no secret, no CAPTCHA.
+#
+# DAILY since 2026-11-20 (founder, roadmap A498: "option 2 if it's free and
+# unlimited quota"). It rode the weekly snapshot from 2026-10-27 to 2026-11-20.
+# Free: this repository is public, so Actions minutes cost nothing, and the job
+# calls Software Heritage's API, never Firebase Hosting (the egress that made the
+# Internet Archive run weekly). Quota: the API allows 120 requests an hour per
+# caller (X-Ratelimit-Limit, read 2026-11-20) — not unlimited, but a daily run
+# spends the same per-hour envelope a weekly one did, 24 hours apart, and fewer
+# heads move in a day than in a week.
+#
+# No commit here: the weekly snapshot's LAST-RUN.md commit keeps the schedule
+# alive (GitHub pauses a schedule after 60 days without repository activity).
+
+on:
+  schedule:
+    - cron: "30 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: heritage
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  heritage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+      - name: Keep the public corpora archived at Software Heritage
+        run: ./heritage.sh

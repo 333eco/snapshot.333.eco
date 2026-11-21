@@ -8,8 +8,8 @@ name: Weekly full snapshot
 # to one) and returned to weekly on 2026-10-27, on the founder's word, for egress: the
 # nightly full crawl loads every route of thonly.org in a cold headless browser, and
 # on Firebase Hosting that was most of the project's bandwidth bill (about 1 GB a day).
-# The cost of weekly is the lag: a revised corpus paper reaches the Archive and
-# Software Heritage within seven days, not one. A site page changed by a push is still
+# The cost of weekly is the lag: a revised corpus paper reaches the Archive
+# within seven days, not one (Software Heritage runs daily, heritage.yml). A site page changed by a push is still
 # captured by that repository's own push-mode snapshot.yml, so only the corpora wait.
 # Run it by hand (Actions -> Run workflow) for a paper that must be captured sooner.
 # Weekly, not monthly: GitHub pauses a schedule after 60 days of inactivity, and the
@@ -141,21 +141,11 @@ jobs:
           IA_S3_SECRET_KEY: ${{ secrets.IA_S3_SECRET_KEY }}
         run: ./submit.sh corpora
 
-  # The second custodian (ruled 2026-10-01). Software Heritage keeps each corpus
-  # repository with its whole history; heritage.sh files a Save Code Now request
-  # only when GitHub's head is newer than what the latest snapshot holds, and
-  # counts a save only when the snapshot points at that commit. Anonymous API, no
-  # secret, no CAPTCHA — so this needs no person, unlike archive.today did.
-  heritage:
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@v6
-      - name: Keep the public corpora archived at Software Heritage
-        run: ./heritage.sh
+  # The Software Heritage job moved to heritage.yml (daily) on 2026-11-20 — the
+  # founder's word, roadmap A498: free in this public repository, it calls no Hosting.
 
   record:
-    needs: [hosts, corpora, heritage]
+    needs: [hosts, corpora]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -164,7 +154,6 @@ jobs:
         env:
           HOSTS_RESULT: ${{ needs.hosts.result }}
           CORPORA_RESULT: ${{ needs.corpora.result }}
-          HERITAGE_RESULT: ${{ needs.heritage.result }}
         run: |
           set -euo pipefail
           git config user.name  "github-actions[bot]"
@@ -182,13 +171,12 @@ jobs:
               echo "- **Ran:** $(date -u '+%Y-%m-%d %H:%M UTC') (\`${GITHUB_EVENT_NAME}\`)"
               echo "- **Hosts job:** ${HOSTS_RESULT}"
               echo "- **Corpora job:** ${CORPORA_RESULT}"
-              echo "- **Software Heritage job:** ${HERITAGE_RESULT}"
               echo "- **Run:** ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
               echo ""
               echo "_Rewritten by every run. Its purpose is the commit: GitHub pauses a scheduled workflow after 60 days without repository activity, and this file is the activity. Per-URL results are in the run's job summaries._"
             } > LAST-RUN.md
             git add LAST-RUN.md
-            git commit -m "weekly snapshot $(date -u +%Y-%m-%d): hosts ${HOSTS_RESULT}, corpora ${CORPORA_RESULT}, heritage ${HERITAGE_RESULT}"
+            git commit -m "weekly snapshot $(date -u +%Y-%m-%d): hosts ${HOSTS_RESULT}, corpora ${CORPORA_RESULT}"
             if git push; then exit 0; fi
             sleep "$attempt"
           done
