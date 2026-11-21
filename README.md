@@ -63,6 +63,9 @@ asked for. The API is anonymous: no secret, no CAPTCHA, no person.
 
 It runs **daily** in its own workflow, `heritage.yml` (06:30 UTC), since 2026-11-20 — free in this public
 repository and never on Firebase Hosting; from 2026-10-27 it had ridden the weekly snapshot.
+⚠️ Save Code Now throttles at about **ten save requests an hour** per caller (measured 2026-11-20, apart from the read
+API's 120 requests an hour). A throttled save is a warning, the rest of that run's origins are not asked, and the next
+run takes them; a daily run also leaves fewer moved heads per run than a weekly one did.
 
 A save still in Software Heritage's queue when the job's one-hour wait ends is a
 warning, because their queue is not our failure and the next run checks the head

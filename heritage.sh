@@ -32,6 +32,7 @@ POLL="${HERITAGE_POLL_SECONDS:-30}"
 WAIT="${HERITAGE_WAIT_SECONDS:-3600}"
 STALL_DAYS="${HERITAGE_STALL_DAYS:-21}"   # three weeks
 fail=0
+throttled=""
 
 get() { curl -sS -m 60 -A "$UA" "$@"; }
 
@@ -70,6 +71,15 @@ while IFS= read -r repo; do
     echo "| \`${repo}\` | \`${head:0:7}\` | \`${held:0:7}\` | ✅ already held | — |" >> "$SUMMARY"
     continue
   fi
+  if [ -n "$throttled" ]; then
+    # Save Code Now throttles separately from the read API: about ten save requests an hour per caller
+    # (measured 2026-11-20 — the eleventh moved head was refused "Throttled", "Expected available in 3562 seconds").
+    # Asking again cannot succeed, so the rest wait for the next run; the stall check below still turns a real
+    # standstill red.
+    echo "::warning::${repo}: not asked this run — Software Heritage throttled the saves; the next run takes it"
+    echo "| \`${repo}\` | \`${head:0:7}\` | \`${held:0:7}\` | ⏳ throttled, next run | — |" >> "$SUMMARY"
+    continue
+  fi
   if [ -n "${DRY_RUN:-}" ]; then
     echo "${repo}: would save (GitHub ${head:0:7}, held ${held:0:7})"
     echo "| \`${repo}\` | \`${head:0:7}\` | \`${held:0:7}\` | would save | — |" >> "$SUMMARY"
@@ -78,6 +88,12 @@ while IFS= read -r repo; do
   resp="$(get -X POST "${API}/origin/save/git/url/${origin}/" || true)"
   id="$(printf '%s' "$resp" | jq -r '.id // empty' 2>/dev/null || true)"
   status="$(printf '%s' "$resp" | jq -r '.save_request_status // empty' 2>/dev/null || true)"
+  if [ -z "$id" ] && printf '%s' "$resp" | grep -q '"Throttled"'; then
+    throttled=1
+    echo "::warning::${repo}: Software Heritage throttled the save request; this and the remaining origins wait for the next run"
+    echo "| \`${repo}\` | \`${head:0:7}\` | \`${held:0:7}\` | ⏳ throttled, next run | — |" >> "$SUMMARY"
+    continue
+  fi
   if [ -z "$id" ] || [ "$status" = "rejected" ]; then
     echo "::error::${repo}: save request not accepted: ${resp:0:300}"
     echo "| \`${repo}\` | \`${head:0:7}\` | \`${held:0:7}\` | ❌ request not accepted | — |" >> "$SUMMARY"
