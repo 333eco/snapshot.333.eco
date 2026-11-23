@@ -23,6 +23,7 @@ sayyourname.app
 seysays.org
 siliconwat.com
 siliconwat.dev
+ocr.siliconwat.dev
 siliconwat.org
 thonly.com
 thonly.net
