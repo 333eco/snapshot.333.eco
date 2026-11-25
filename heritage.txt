@@ -20,3 +20,5 @@ SiliconWat/capacity-funded-ai
 SiliconWat/for-the-good-of-both
 # Added 2026-11-13 (founder: "join the daily Software Heritage"): the B-PoH signed-statements spec, public, CC0.
 333eco/b-poh-statements
+# Added 2026-11-25 (founder: a public versions repo, "Software Heritage keeps every version"; A709): every version of every service's legal documents, rights reserved.
+333eco/legal-versions

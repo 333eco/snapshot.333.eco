@@ -33,3 +33,4 @@ explorer.333.eco
 developers.333.eco
 b.333.eco
 storage.333.eco
+legal.333.eco
